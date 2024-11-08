@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>源数据明细</title>
+  <style>
+    body {
+      background-color: aliceblue;
+    }
+
+    h2 {
+      text-decoration: underline;
+    }
+
+    button {
+      padding: 10px 30px; /* 设置按钮内边距 */
+      background-color: #007bff; /* 设置按钮背景颜色 */
+      color: white; /* 设置按钮文本颜色 */
+      border: none; /* 移除按钮边框 */
+      cursor: pointer; /* 鼠标悬停时显示手型指示可点击 */
+      margin: 10px; /* 设置按钮间距 */
+      border-radius: 10px /* 添加圆角*/;
+    }
+
+    /* 设置每一列的宽度为5% */
+    table {
+      width: 100%;
+    }
+
+    th, td {
+      width: 5%;
+      text-align: center; /* 居中对齐 */
+      padding: 8px;
+    }
+
+  </style>
+</head>
+<body>
+  <h2>肥力分析工具>首页>源数据明细</h2>
+
+  <div>
+    <label for="batchNumber">批次编号:</label>
+    <input type="text" id="batchNumber">
+
+    <!-- 查询按钮 -->
+    <button id="queryBtn">查询</button>
+  </div>
+
+  <!-- 表格 -->
+  <table id="dataTable">
+    <thead>
+    <tr>
+      <th>批次编号</th>
+      <th>样品编号</th>
+      <th>样品容重</th>
+      <th>样品PH值</th>
+      <th>样品有机质</th>
+      <th>样品全氮</th>
+      <th>样品全钾</th>
+      <th>样品全磷</th>
+      <th>样品有效磷</th>
+      <th>样品速效钾</th>
+      <th>样品碱解氮</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- 数据行将通过 JavaScript 动态添加 -->
+    </tbody>
+  </table>
+
+  <!-- 分页 -->
+  <div class="pagination" id="pagination"></div>
+
+  <script>
+    let tableData = [];
+
+    const itemsPerPage = 15; // 每页显示的数据条目数
+    let currentPage = 1;
+
+    const queryBtn = document.getElementById('queryBtn');
+    const dataTable = document.getElementById('dataTable');
+    const pagination = document.getElementById('pagination');
+
+    function displayData(page) {
+      dataTable.querySelector('tbody').innerHTML = ''; // 清空表格内容
+
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedData = tableData.slice(start, end);
+
+      paginatedData.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.batchNumber}</td>
+            <td>${item.sampleBatch}</td>
+            <td>${item.sampleUnitWeight}</td>
+            <td>${item.samplePH}</td>
+            <td>${item.sampleOrganic}</td>
+            <td>${item.sampleTotalNitrogen}</td>
+            <td>${item.sampleTotalPotassium}</td>
+            <td>${item.sampleTotalPhosphorus}</td>
+            <td>${item.sampleEffectivePhosphorus}</td>
+            <td>${item.sampleQuickactingPotassium}</td>
+            <td>${item.sampleAlkalineNitrogen}</td>
+          `;
+        dataTable.querySelector('tbody').appendChild(row);
+      });
+    }
+
+    function displayPagination() {
+      const totalPages = Math.ceil(tableData.length / itemsPerPage);
+
+      pagination.innerHTML = '';
+      for (let i = 1; i <= totalPages; i++) {
+        const pageLink = document.createElement('a');
+        pageLink.href = '#';
+        pageLink.classList.add('page-link');
+        pageLink.textContent = i;
+
+        pageLink.addEventListener('click', () => {
+          currentPage = i;
+          displayData(currentPage);
+          highlightCurrentPage();
+        });
+
+        pagination.appendChild(pageLink);
+      }
+
+      highlightCurrentPage();
+    }
+
+    function highlightCurrentPage() {
+      const pageLinks = document.querySelectorAll('.page-link');
+      pageLinks.forEach(link => {
+        link.classList.remove('active');
+        if (parseInt(link.textContent) === currentPage) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    queryBtn.addEventListener('click', () => {
+      currentPage = 1;
+      displayData(currentPage);
+      displayPagination();
+    });
+
+    displayData(currentPage);
+    displayPagination();
+
+    queryBtn.addEventListener('click', () => {
+      const batchNumber = document.getElementById('batchNumber').value; // 获取批次编号输入框的值
+      fetch(`/query/resource?batchNumber=${batchNumber}`)
+        .then(response => response.json())
+        .then(data => {
+          tableData = data; // 更新表格数据
+          currentPage = 1;
+          displayData(currentPage);
+          displayPagination();
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+    })
+  </script>
+</body>
+</html>

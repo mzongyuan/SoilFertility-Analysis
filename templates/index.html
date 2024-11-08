@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>土壤分析工具</title>
+    <style>
+        body {
+            background-color: aliceblue;
+        }
+
+        h2 {
+            text-decoration: underline;
+        }
+
+        .progress-bar {
+            display: flex;
+            flex-direction: column; /* 设置为纵向排列 */
+            align-items: flex-start; /* 左对齐 */
+            margin-bottom: 10px;
+        }
+
+        .step {
+            width: 24%; /* 每个步骤占据 24% 的宽度 */
+            height: 30px;
+            background-color: lightgray;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white; /* 白色文本 */
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .step-active {
+            background-color: #007bff; /* 活动步骤的背景颜色 */
+        }
+
+        button {
+            padding: 10px 20px; /* 设置按钮内边距 */
+            background-color: #007bff; /* 设置按钮背景颜色 */
+            color: white; /* 设置按钮文本颜色 */
+            border: none; /* 移除按钮边框 */
+            cursor: pointer; /* 鼠标悬停时显示手型指示可点击 */
+            margin: 10px; /* 设置按钮间距 */
+            border-radius: 10px /* 添加圆角*/;
+        }
+
+        .modal {
+            display: none;
+            width: 800px;
+            height: 300px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            overflow: auto;
+            background-color: #fefefe;
+            border: 1px solid black; /* 设置黑色边框 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px; /* 调整标题与内容的间距 */
+        }
+        .modal-content {
+            /* 设置内部样式，视情况调整 */
+        }
+        .close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .submit-btn {
+            float: right;
+        }
+        .cancel-btn {
+            float: right;
+            margin-right: 10px; /* 可以调整按钮之间的距离 */
+        }
+    </style>
+</head>
+<body>
+<h2>肥力分析工具>首页</h2>
+<div style="margin-left: 3%">
+    </br>
+    </br>
+    <!-- 进度条 -->
+    <h5>土壤分析步骤</h5>
+    <div class="progress-bar">
+        <div class="step step-active">开始</div>
+        <div class="step step-active">土壤源数据导入</div>
+        <div class="step step-active">土壤数据分析</div>
+        <div class="step step-active">分析结果导出</div>
+        <div class="step step-active">结束</div>
+    </div>
+    </br>
+    </br>
+    <!-- 添加按钮 -->
+    <h5>土壤分析</h5>
+    <button>数据录入</button>
+    <button>批次数据</button>
+    <button>数据明细</button>
+    <button>数据分析</button>
+    </br>
+    </br>
+    <!-- 添加按钮 -->
+    <h5>分析结果</h5>
+    <button>结果导出</button>
+</div>
+
+<!-- 数据导入模态框 -->
+<div id="InportModel" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3 class="modal-title">数据导入</h3> <!-- 弹窗标题 -->
+        <h5 style="color: red">注意:土壤源数据请勿重复导入参与分析计算</h5>
+        <h5 style="color: red">注意:针对源数据定义唯一的批次号，例如20211028批次数据</h5>
+        <form id="dataEntryForm">
+            <label for="batchNumber">(1). 请录入批次号：</label>
+            <input type="text" id="batchNumber" name="batchNumber">
+            <br><br>
+            <label for="fileInput">(2). 请选择源文件：</label>
+            <input type="file" id="fileInput" name="fileInput" accept=".xls,.xlsx">
+            <br><br>
+            <button type="button" class="cancel-btn">取消</button>
+            <button type="submit" class="submit-btn">提交</button>
+        </form>
+    </div>
+    <div id="error-message" style="color: red; display: none;">请填写批次号和选择文件</div>
+    <div id="success-message" style="color: green; display: none;">数据导入成功</div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var modal = document.getElementById("InportModel");
+        var closeBtn = document.getElementsByClassName("close")[0]; // 修正获取关闭按钮的方式
+        var dataEntryBtn = document.querySelector('button:nth-of-type(1)'); // 修正获取数据录入按钮的方式
+        var dataBatchBtn = document.querySelector('button:nth-of-type(2)'); // 修正获取数据录入按钮的方式
+        var dataDetailBtn = document.querySelector('button:nth-of-type(3)'); // 获取数据明细按钮
+        var analysisBtn = document.querySelector('button:nth-of-type(4)'); // 获取数据明细按钮
+        var exportBtn = document.querySelector('button:nth-of-type(5)'); // 获取结果输出按钮
+
+        // 数据导入页面
+        if (modal && closeBtn && dataEntryBtn) {
+            dataEntryBtn.onclick = function() {
+                modal.style.display = "block";
+            }
+            closeBtn.onclick = function() { // 修改为使用正确的关闭按钮
+                modal.style.display = "none";
+            }
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+            // 取消按钮
+            var cancelBtn = document.querySelector('.cancel-btn'); // 获取取消按钮
+            if(cancelBtn){
+                cancelBtn.onclick = function() {
+                    modal.style.display = "none"; // 点击取消按钮时隐藏模态框
+                }
+            }
+            var dataEntryForm = document.getElementById("dataEntryForm");
+            if(dataEntryForm){
+                dataEntryForm.addEventListener("submit", function(event) {
+                    var batchNumber = document.getElementById("batchNumber").value;
+                    var fileInput = document.getElementById("fileInput");
+                    if (batchNumber.trim() === '' || !fileInput.files[0]) {
+                        var errorMessage = document.getElementById('error-message');
+                        errorMessage.textContent = '请填写批次号和选择文件';
+                        errorMessage.style.display = 'block'; // 显示错误消息
+                        event.preventDefault(); // 阻止表单提交
+                    } else {
+                        var errorMessage = document.getElementById('error-message');
+                        errorMessage.style.display = 'none'; // 隐藏错误消息
+                        event.preventDefault();
+                        var formData = new FormData(dataEntryForm); // 创建一个新的 FormData 对象
+                        formData.append('batchNumber', batchNumber);
+                        formData.append('file_path', fileInput.files[0]);
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("POST", "/process_data", true);
+                        xhr.onreadystatechange = function () {
+                            if (xhr.readyState === XMLHttpRequest.DONE) {
+                                var successMessage = document.getElementById('success-message');
+                                successMessage.style.display = 'block'; // 显示成功消息
+                                setTimeout(function() {
+                                    successMessage.style.display = 'none'; // 一段时间后隐藏成功消息
+                                    modal.style.display = "none"; // 关闭模态框
+                                }, 3000); // 3秒钟后关闭提示
+                            }
+                        };
+                        xhr.send(formData);
+                        modal.style.display = "none";
+                    }
+                });
+            }
+        }
+
+        // 打开批次数据界面
+        if (dataBatchBtn) {
+            dataBatchBtn.onclick = function() {
+                window.open('/data_batch_page', '_blank');
+            }
+        }
+
+        // 打开数据明细界面
+        if (dataDetailBtn) {
+            dataDetailBtn.onclick = function() {
+                window.open('/data_detail_page', '_blank');
+            }
+        }
+
+        // 数据分析操作
+        if (analysisBtn) {
+            analysisBtn.onclick = function() {
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/data/analysis", true);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        // 处理响应结果，这里可以根据需要执行相应的操作
+                        if (xhr.status === 200) {
+                            console.log("Analysis request sent successfully.");
+                        } else {
+                            console.error("Error sending analysis request.");
+                        }
+                    }
+                };
+                xhr.send(JSON.stringify({})); // 如果有需要传递的数据，可以在这里添加
+            };
+        }
+
+        // 分析结果输出
+        if (exportBtn) {
+            exportBtn.onclick = function() {
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/data/export", true);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        // 处理响应结果，这里可以根据需要执行相应的操作
+                        if (xhr.status === 200) {
+                            console.log("Export request sent successfully.");
+                        } else {
+                            console.error("Error sending analysis request.");
+                        }
+                    }
+                };
+                xhr.send(JSON.stringify({})); // 如果有需要传递的数据，可以在这里添加
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
